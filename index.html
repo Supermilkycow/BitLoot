@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>BitLoot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基于 Bitcoin Blockchain 的年会抽奖游戏。">
+  <link rel="canonical" href="http://www.x86cow.com/">
+
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+  <meta property="og:image" content="/bitloot.png" />
+  <meta property="og:title" content="BitLoot" />
+  <meta property="og:description" content="BitLoot - 一个基于区块链交易Hash随机性的年会抽奖程序." />
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/font-awesome.min.css">
+
+  <style type="text/css">
+    html {
+      position: relative;
+      min-height: 100%;
+    }
+    body {
+      /* Margin bottom by footer height */
+      margin-bottom: 60px;
+      color: #26333a;
+    }
+    .page-header a,
+    .page-header a:link,
+    .page-header a:visited,
+    .page-header a:active,
+    .page-header a:hover {
+      color: #26333a;
+      text-decoration: none;
+    }
+    a, a:link, a:visited, a:active, a:hover {
+      color: #5cb85c;
+    }
+    .logo {
+      color: #5cb85c;
+    }
+    .simplified {
+      display: none!important;
+      visibility: hidden!important;
+    }
+    #raffle {
+      margin: 0px 0;
+    }
+    #raffle .header {
+      padding-bottom: 1em;
+    }
+    #spinner {
+      padding: 20px 0;
+    }
+    #buy-ticket {
+      margin-bottom: 50px;
+    }
+    #qrcode {
+      margin-bottom: 20px;
+    }
+    #qrcode canvas {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .winning-ticket {
+      font-weight: 700;
+    }
+    .ticket {
+      font-family: monospace
+    }
+
+    .ticket:before {
+      display: inline-block;
+      font-family: FontAwesome;
+      font-style: normal;
+      font-weight: normal;
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      content: "\f145";
+      padding-right: 0.2em;
+    }
+
+    #how-it-works {
+      margin: 60px 0;
+    }
+    .btn-create {
+      color: #fff;
+      background-color: #5cb85c;
+      border-color: #4cae4c;
+    }
+    #footer {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      /* Set the fixed height of the footer here */
+      height: 60px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      width: auto;
+      max-width: 960px;
+      padding: 0 15px;
+    }
+    .container .text-muted {
+      margin: 20px 0;
+    }
+    .unfocus {
+      cursor: default;
+    }
+  </style>
+
+  <script src="jquery-1.11.0.min.js"></script>
+
+  <script src="jquery.qrcode.min.js"></script>
+
+  <script src="bootstrap.min.js"></script>
+
+  <script src="sjcl.js"></script>
+
+  <script src="bitloot.js"></script>
+
+  <script>
+    var TICKET_LENGTH = 16;
+    var MAX_WINNERS = 3;
+    $(document).ready(function(){
+      // When form submitted, encode data and redirect
+      $("#create-raffle").submit(function( event ) {
+        event.preventDefault();
+
+        var data = encodeData($("#block").val(), $("#level").val(), $("#winners").val(), $("#mantotal").val());
+        // handleData(data);
+        window.location.href = "?data=" + data;
+      });
+     // console.log(getUrlParams());
+
+      var urlParams = getUrlParams();
+
+      if (urlParams.simple) {
+        alert("simple");
+        $("#tickets-bought").addClass("simplified");
+      }
+
+      var data = decodeData(urlParams);
+
+      var block = Number(data.block);
+      var level = Number(data.level);
+      var maxWinners = Number(data.winners);
+      maxWinners = isNaN(maxWinners) ? 1 : maxWinners;
+      var mantotal = Number(data.mantotal);
+
+      if (block !== undefined && !isNaN(block) && block >= 0 &&
+          level !== undefined && !isNaN(level) && level >= 0) {
+
+        $("#raffle").removeClass("hidden");
+        $(".target-block").text(block);
+          $("#block").val(block);
+          $("#level").val(level);
+          $("#winners").val(maxWinners);
+          $("#mantotal").val(mantotal);
+
+        runLoot(block, level, maxWinners, mantotal);
+      }
+    });
+
+    function decodeData(urlParams) {
+      var utf8String = sjcl.codec.utf8String;
+      var base64 = sjcl.codec.base64;
+
+      try{
+        return JSON.parse(utf8String.fromBits(base64.toBits(urlParams.data)))
+      }catch(e){
+        // Don't care for error
+        return urlParams;
+      }
+    }
+
+    function encodeData(block, level, winners, mantotal) {
+      var utf8String = sjcl.codec.utf8String;
+      var base64 = sjcl.codec.base64;
+
+      var data = {block: block, level: level, winners: winners, mantotal: mantotal};
+      return base64.fromBits(utf8String.toBits(JSON.stringify(data)));
+    }
+
+    function showWinner(result) {
+      $(".winner-found").removeClass("hidden");
+      $(".calculating-winner").addClass("hidden");
+      $(".winning-tx").text(result);
+      $("#create-raffle").removeClass("hidden");
+    }
+
+
+
+
+    function showError(message) {
+      $("#spinner").addClass("hidden");
+      $("#winner").addClass("hidden");
+      $("#error-box").removeClass("hidden");
+      $("#error-box p").text(message);
+    }
+
+
+
+    function runLoot(block, level, maxWinners, mantotal) {
+      bitloot.run(block, level, maxWinners, mantotal, function(err, result) {
+        if (err) {
+          showError(err);
+//          console.error(err);
+          $("#create-raffle").removeClass("hidden");
+          return;
+        }
+        else if (err === "") {
+          showError("An unknown error occurred");
+//          console.error("An unknown error occurred");
+          return;
+        }
+
+
+        if (result !== undefined && result) {
+          // var winner = result.winners[0];
+            result = level + "等奖 " + result;
+            showWinner(result);
+//          console.log("Winner transaction is: " + winner.tx.hash + " with ticket " + winner.ticket);
+          // showFollowups(result.winners);
+        }
+        else {
+//          console.log("Not a winner yet");
+          showWinner("none", "none");
+        }
+      }, function(latestBlock) {
+        if (latestBlock.height < block) {
+          var blocksLeft = block - latestBlock.height;
+          $(".blocks-left").text(blocksLeft);
+        }
+        else {
+          $("#spinner").addClass("hidden");
+          $("#winner").removeClass("hidden");
+          $(".blocks-left").text(0);
+        }
+
+      }, function(newTxs) {
+        var tableRows = [];
+        var totalAmount = Number($(".amount-in-raffle").text());
+        if (isNaN(totalAmount)) { totalAmount = 0; }
+        totalAmount = Math.round(totalAmount * 1e8);
+
+        for (var i = 0; i < newTxs.length; i++) {
+          var tx = newTxs[i];
+          var row =
+              "<tr><td>"+tx.hash+"</td>" +
+                  "<td><i class='fa fa-btc'></i> "+tx.value/1e8+"</td>" +
+                  "<td>"+tx.totalTickets+"</td></tr>";
+          tableRows.push(row);
+          totalAmount += tx.value;
+
+          // Show tickets
+          if (tx.tickets.length > 0) {
+            var rowspan = " rowspan='" + (tx.tickets.length + 1) + "'";
+
+            tableRows.push("<tr><td"+rowspan+">Tickets</td><td"+rowspan+"></td></tr>");
+
+            for (var j = 0; j < tx.tickets.length; j++) {
+              var ticketShort = "<span class='ticket'>" + tx.tickets[j].substr(0, TICKET_LENGTH) + "</span>";
+              var ticketRow = "<tr><td>"+ticketShort+"</td></tr>";
+              tableRows.push(ticketRow);
+            }
+          }
+        }
+        $(".amount-in-raffle").text(totalAmount / 1e8);
+        // Show table if there are transactions
+        if (newTxs.length > 0) {
+          $("#tickets-bought").removeClass("hidden");
+          $("#result-table > tbody:last").append(tableRows.join(""));
+        }
+      });
+    }
+
+
+    function getUrlParams() {
+      "use strict";
+      var match,
+          pl     = /\+/g,  // Regex for replacing addition symbol with a space
+          search = /([^&=]+)=?([^&]*)/g,
+          decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+          query  = window.location.search.substring(1);
+
+      var urlParams = {};
+      match = search.exec(query);
+      while (match) {
+        var name = decode(match[1]), value = decode(match[2]);
+
+        if (urlParams[name] === undefined) {
+          urlParams[name] = value;
+        }
+        else {
+          if (!$.isArray(urlParams[name])) {
+            urlParams[name] = [urlParams[name]];
+          }
+          urlParams[name].push(value);
+        }
+        match = search.exec(query);
+      }
+      return urlParams;
+    }
+
+
+
+
+  </script>
+
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <a href=".">
+      <h1><i class="fa fa-ticket "></i> BitLoot</h1>
+    </a>
+  </div>
+
+  <p class="lead">基于 Bitcoin Blockchain 的年会抽奖游戏。</p>
+
+
+  <div id="raffle" class="hidden">
+    <div class="header">
+
+      <h3>
+        <span class="title"></span>
+        <small>目标block：<span class="target-block"></span>
+          (还剩<span class="blocks-left"><i class="fa fa-spinner fa-spin"></i></span>)</small>
+      </h3>
+    </div>
+
+    <div id="spinner" class="text-center">
+      <h1><i class="fa fa-spinner fa-spin"></i></h1>
+    </div>
+
+    <div id="error-box" class="alert alert-danger hidden">
+      <h5>Error</h5>
+      <p></p>
+    </div>
+
+    <div id="winner" class="alert alert-success hidden">
+      <p class="calculating-winner">计算中奖者... <i class="fa fa-spinner fa-spin"></i></p>
+      <div class="winner-found hidden">
+        <h2>抽奖结果: <span class="winning-tx"></span> !</h2>
+
+      </div>
+    </div>
+
+
+  </div>
+
+
+  <div id="fill-parameters" class="row">
+
+    <div class="col-md-6">
+      <form id="create-raffle" class="form-horizontal" role="form">
+
+        <div class="form-group">
+          <label for="block" class="col-sm-3 control-label">Target block</label>
+          <div class="col-sm-9">
+            <input required="required" type="number" min="0" class="form-control" id="block" name="block" placeholder=" 449388">
+            <span class="help-block">当出现该Block后计算中奖者</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="level" class="col-sm-3 control-label">Prize level</label>
+          <div class="col-sm-9">
+            <input required="required" type="number" min="1" max="5" class="form-control unfocus" id="level" name="level"  placeholder="3" value="3">
+            <span class="help-block">奖品等级</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="winners" class="col-sm-3 control-label">Winners</label>
+          <div class="col-sm-9">
+            <input required="required" type="number" min="1" class="form-control unfocus" id="winners" name="winners"  placeholder="1" value="1">
+            <span class="help-block">中奖人数</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="mantotal" class="col-sm-3 control-label">Total</label>
+          <div class="col-sm-9">
+            <input required="required" type="number" min="1" class="form-control unfocus" id="mantotal" name="mantotal" placeholder="100" value="100">
+            <span class="help-block">总人数</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-3 col-sm-9">
+            <button type="submit" class="btn btn-create">开始抽奖</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<div id="footer">
+
+  <div class="modal fade" id="license" tabindex="-1" role="dialog" aria-labelledby="licenseLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="myModalLabel">The MIT License (MIT)</h4>
+        </div>
+        <div class="modal-body">
+          <p>Copyright (c) 2014 Giannis Dzegoutanis</p>
+
+          <p>
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+          </p>
+
+          <p>
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+          </p>
+
+          <p>
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+            SOFTWARE.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <p class="text-muted">
+      &copy; 2014 <a href="https://github.com/supermilkycow">Super Cow</a>.
+      Uses APIs from <a href="http://blockr.io/" target="_blank">blockr.io</a>.
+      Read the terms of use <a href="" data-toggle="modal" data-target="#license">here</a>.
+    </p>
+  </div>
+</div>
+
+
+</body>
+</html>
