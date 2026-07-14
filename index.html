@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,174 +8,671 @@
   <meta name="description" content="基于 Bitcoin Blockchain 的年会抽奖游戏。">
   <link rel="canonical" href="http://www.x86cow.com/">
 
-  <link rel="shortcut icon" href="/favicon.ico" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
 
-  <meta property="og:image" content="/bitloot.png" />
+  <meta property="og:image" content="bitloot.png" />
   <meta property="og:title" content="BitLoot" />
-  <meta property="og:description" content="BitLoot - 一个基于区块链交易Hash随机性的年会抽奖程序." />
+  <meta property="og:description" content="BitLoot - 一个基于区块链交易 Hash 随机性的抽奖程序。" />
 
-  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="css/bootstrap.min.css">
   <link rel="stylesheet" href="css/font-awesome.min.css">
 
+  <script>
+    (function () {
+      var allowedThemes = {"red-gold": true, "black-gold": true, "blue-gold": true};
+      var match = window.location.search.match(/[?&]theme=([^&]+)/);
+      var theme;
+      if (match) {
+        try { theme = decodeURIComponent(match[1]); } catch (e) { theme = undefined; }
+      } else {
+        try { theme = window.localStorage.getItem("bitloot-theme"); } catch (e) { theme = undefined; }
+      }
+      document.documentElement.setAttribute("data-theme", allowedThemes[theme] ? theme : "red-gold");
+    }());
+  </script>
+
   <style type="text/css">
-    html {
-      position: relative;
-      min-height: 100%;
+    :root,
+    html[data-theme="red-gold"] {
+      --bg-start: #260407;
+      --bg-mid: #720d16;
+      --bg-end: #310306;
+      --glow-primary: rgba(225, 45, 55, 0.42);
+      --glow-accent: rgba(255, 199, 86, 0.30);
+      --panel: rgba(255, 250, 241, 0.97);
+      --panel-solid: #fffaf1;
+      --surface: #fff4df;
+      --surface-raised: #ffffff;
+      --field-bg: #ffffff;
+      --field-border: #e8cfaa;
+      --muted: #806c5e;
+      --text: #3d1715;
+      --label: #5f2924;
+      --primary: #d5222d;
+      --primary-dark: #9f111b;
+      --primary-soft: rgba(213, 34, 45, 0.12);
+      --accent: #f4bd48;
+      --accent-bright: #ffe39a;
+      --accent-soft: rgba(244, 189, 72, 0.20);
+      --button-text: #ffffff;
+      --line: #ead7b9;
+      --formula-bg: #3a090b;
+      --formula-text: #ffeab0;
+      --table-head: #fff0d2;
+      --table-head-text: #70401f;
+      --focus-ring: rgba(213, 34, 45, 0.18);
+      --button-shadow: rgba(159, 17, 27, 0.30);
+      --panel-shadow: rgba(31, 0, 3, 0.34);
+      --winner-border: rgba(213, 34, 45, 0.28);
+      --warning-bg: #fff0c7;
     }
+
+    html[data-theme="black-gold"] {
+      --bg-start: #050505;
+      --bg-mid: #1b1710;
+      --bg-end: #070707;
+      --glow-primary: rgba(221, 177, 72, 0.27);
+      --glow-accent: rgba(255, 222, 135, 0.18);
+      --panel: rgba(20, 19, 17, 0.97);
+      --panel-solid: #141311;
+      --surface: #211d16;
+      --surface-raised: #292319;
+      --field-bg: #1d1b17;
+      --field-border: #5c4b27;
+      --muted: #b7aa8f;
+      --text: #f5e8c7;
+      --label: #e7d5aa;
+      --primary: #d9ad45;
+      --primary-dark: #b18122;
+      --primary-soft: rgba(217, 173, 69, 0.14);
+      --accent: #f0cb70;
+      --accent-bright: #ffe6a3;
+      --accent-soft: rgba(240, 203, 112, 0.16);
+      --button-text: #17120a;
+      --line: #4b3d22;
+      --formula-bg: #050505;
+      --formula-text: #f8d981;
+      --table-head: #2b2519;
+      --table-head-text: #e7cc87;
+      --focus-ring: rgba(217, 173, 69, 0.20);
+      --button-shadow: rgba(217, 173, 69, 0.23);
+      --panel-shadow: rgba(0, 0, 0, 0.62);
+      --winner-border: rgba(217, 173, 69, 0.42);
+      --warning-bg: #3a2e17;
+    }
+
+    html[data-theme="blue-gold"] {
+      --bg-start: #041227;
+      --bg-mid: #0c3a75;
+      --bg-end: #061a35;
+      --glow-primary: rgba(38, 116, 206, 0.42);
+      --glow-accent: rgba(255, 196, 72, 0.26);
+      --panel: rgba(247, 251, 255, 0.97);
+      --panel-solid: #f7fbff;
+      --surface: #edf6ff;
+      --surface-raised: #ffffff;
+      --field-bg: #ffffff;
+      --field-border: #bfd3e8;
+      --muted: #5f7186;
+      --text: #102d50;
+      --label: #274b70;
+      --primary: #246bb7;
+      --primary-dark: #124a87;
+      --primary-soft: rgba(36, 107, 183, 0.12);
+      --accent: #efb83e;
+      --accent-bright: #ffe29a;
+      --accent-soft: rgba(239, 184, 62, 0.18);
+      --button-text: #ffffff;
+      --line: #cdddec;
+      --formula-bg: #061c38;
+      --formula-text: #ffe3a0;
+      --table-head: #e5f1fc;
+      --table-head-text: #285276;
+      --focus-ring: rgba(36, 107, 183, 0.18);
+      --button-shadow: rgba(14, 65, 119, 0.32);
+      --panel-shadow: rgba(0, 17, 43, 0.38);
+      --winner-border: rgba(36, 107, 183, 0.27);
+      --warning-bg: #fff1c9;
+    }
+
+    html { min-height: 100%; }
+
     body {
-      /* Margin bottom by footer height */
-      margin-bottom: 60px;
-      color: #26333a;
-    }
-    .page-header a,
-    .page-header a:link,
-    .page-header a:visited,
-    .page-header a:active,
-    .page-header a:hover {
-      color: #26333a;
-      text-decoration: none;
-    }
-    a, a:link, a:visited, a:active, a:hover {
-      color: #5cb85c;
-    }
-    .logo {
-      color: #5cb85c;
-    }
-    .simplified {
-      display: none!important;
-      visibility: hidden!important;
-    }
-    #raffle {
-      margin: 0px 0;
-    }
-    #raffle .header {
-      padding-bottom: 1em;
-    }
-    #spinner {
-      padding: 20px 0;
-    }
-    #buy-ticket {
-      margin-bottom: 50px;
-    }
-    #qrcode {
-      margin-bottom: 20px;
-    }
-    #qrcode canvas {
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .winning-ticket {
-      font-weight: 700;
-    }
-    .ticket {
-      font-family: monospace
+      min-height: 100%;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 14% 8%, var(--glow-primary), transparent 30%),
+        radial-gradient(circle at 86% 2%, var(--glow-accent), transparent 28%),
+        linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 52%, var(--bg-end) 100%);
+      background-attachment: fixed;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      transition: background 0.35s ease, color 0.25s ease;
     }
 
-    .ticket:before {
-      display: inline-block;
-      font-family: FontAwesome;
-      font-style: normal;
-      font-weight: normal;
-      line-height: 1;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      content: "\f145";
-      padding-right: 0.2em;
+    body::before,
+    body::after {
+      position: fixed;
+      z-index: 0;
+      width: 260px;
+      height: 260px;
+      border: 1px solid rgba(255, 222, 145, 0.18);
+      border-radius: 50%;
+      content: "";
+      pointer-events: none;
     }
 
-    #how-it-works {
-      margin: 60px 0;
-    }
-    .btn-create {
-      color: #fff;
-      background-color: #5cb85c;
-      border-color: #4cae4c;
-    }
-    #footer {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      /* Set the fixed height of the footer here */
-      height: 60px;
-      background-color: #f5f5f5;
-    }
-    .container {
+    body::before { top: -150px; left: -80px; box-shadow: 0 0 0 22px rgba(255, 222, 145, 0.035), 0 0 0 48px rgba(255, 222, 145, 0.02); }
+    body::after { right: -110px; bottom: -160px; box-shadow: 0 0 0 28px rgba(255, 222, 145, 0.035), 0 0 0 58px rgba(255, 222, 145, 0.02); }
+
+    a, a:link, a:visited, a:active, a:hover { color: var(--primary-dark); }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
       width: auto;
-      max-width: 960px;
-      padding: 0 15px;
+      max-width: 1080px;
+      padding: 28px 16px 44px;
+      margin: 0 auto;
     }
-    .container .text-muted {
-      margin: 20px 0;
+
+    .hero {
+      position: relative;
+      color: #fff;
+      padding: 22px 0 26px;
     }
-    .unfocus {
-      cursor: default;
+
+    .hero-topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: #fff !important;
+      text-decoration: none !important;
+    }
+
+    .brand-icon {
+      position: relative;
+      width: 50px;
+      height: 50px;
+      border: 1px solid rgba(255, 238, 188, 0.66);
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--button-text);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 14px 34px var(--button-shadow);
+    }
+
+    .brand-icon::after {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      color: var(--accent-bright);
+      content: "✦";
+      font-size: 16px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.30);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      text-shadow: 0 3px 16px rgba(0,0,0,0.24);
+    }
+
+    .hero .lead {
+      margin: 18px 0 0;
+      max-width: 760px;
+      color: rgba(255, 255, 255, 0.80);
+      line-height: 1.7;
+    }
+
+    .badge-line { margin-top: 18px; }
+
+    .soft-badge {
+      display: inline-block;
+      margin: 0 8px 8px 0;
+      padding: 7px 12px;
+      color: rgba(255,255,255,0.90);
+      border: 1px solid rgba(255,229,163,0.25);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.09);
+      backdrop-filter: blur(10px);
+    }
+
+    .theme-picker {
+      flex: 0 0 auto;
+      padding: 8px;
+      border: 1px solid rgba(255, 229, 163, 0.22);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.18);
+      box-shadow: 0 12px 34px rgba(0,0,0,0.16);
+      backdrop-filter: blur(12px);
+    }
+
+    .theme-picker-label {
+      display: block;
+      margin: 0 0 6px 4px;
+      color: rgba(255,255,255,0.68);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .theme-options { display: flex; gap: 6px; }
+
+    .theme-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 9px;
+      color: rgba(255,255,255,0.76);
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .theme-option:hover,
+    .theme-option:focus {
+      color: #fff;
+      outline: 0;
+      background: rgba(255,255,255,0.10);
+    }
+
+    .theme-option[aria-pressed="true"] {
+      color: #fff;
+      border-color: rgba(255,224,151,0.42);
+      background: rgba(255,255,255,0.14);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.10);
+    }
+
+    .theme-option[aria-pressed="true"] .theme-swatch { transform: scale(1.13); box-shadow: 0 0 0 2px rgba(255,255,255,0.55); }
+
+    .theme-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .theme-swatch-red { background: linear-gradient(135deg, #d5222d 50%, #f4bd48 50%); }
+    .theme-swatch-black { background: linear-gradient(135deg, #111 50%, #d9ad45 50%); }
+    .theme-swatch-blue { background: linear-gradient(135deg, #246bb7 50%, #efb83e 50%); }
+
+    .panel-modern {
+      position: relative;
+      border: 1px solid rgba(255, 226, 155, 0.18);
+      border-radius: 22px;
+      color: var(--text);
+      background: var(--panel);
+      box-shadow: 0 24px 80px var(--panel-shadow);
+      overflow: hidden;
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .panel-modern::before {
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent-bright), var(--primary));
+      content: "";
+    }
+
+    .panel-modern .panel-heading {
+      border: 0;
+      color: var(--text);
+      background: var(--panel-solid);
+      padding: 19px 24px 12px;
+    }
+
+    .panel-modern .panel-body {
+      color: var(--text);
+      background: var(--panel);
+      padding: 24px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .section-subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .form-control {
+      height: 44px;
+      color: var(--text);
+      border-radius: 12px;
+      border-color: var(--field-border);
+      background: var(--field-bg);
+      box-shadow: none;
+    }
+
+    .form-control[readonly] { color: var(--muted); background: var(--surface); }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus-ring); }
+    .control-label { color: var(--label); }
+    .help-block { color: var(--muted); }
+
+    .btn {
+      border-radius: 12px;
+      font-weight: 700;
+      padding: 10px 16px;
+    }
+
+    .btn-create {
+      color: var(--button-text);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-color: var(--primary-dark);
+      box-shadow: 0 12px 24px var(--button-shadow);
+    }
+
+    html[data-theme="black-gold"] .btn-create { background: linear-gradient(135deg, var(--accent-bright), var(--primary)); }
+    .btn-create:hover, .btn-create:focus { color: var(--button-text); filter: brightness(1.05); }
+
+    .btn-ghost {
+      color: var(--label);
+      border-color: var(--field-border);
+      background: var(--surface);
+    }
+
+    .btn-ghost:hover,
+    .btn-ghost:focus { color: var(--text); border-color: var(--primary); background: var(--primary-soft); }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      flex: 1 1 150px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      margin-top: 5px;
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 800;
+      word-break: break-all;
+    }
+
+    .result-hero {
+      position: relative;
+      border-radius: 18px;
+      padding: 22px 20px 20px;
+      background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft));
+      border: 1px solid var(--winner-border);
+      overflow: hidden;
+    }
+
+    .result-hero::after {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      color: var(--accent);
+      content: "✦  ✦";
+      font-size: 17px;
+      letter-spacing: 4px;
+      opacity: 0.75;
+    }
+
+    .result-hero h2 { margin: 0 0 8px; color: var(--text); font-weight: 800; }
+    .result-hero p { color: var(--muted); margin: 0; }
+
+    .winner-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .winner-card {
+      position: relative;
+      padding: 16px;
+      border: 1px solid var(--winner-border);
+      border-radius: 18px;
+      background: var(--surface-raised);
+      text-align: center;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .winner-card::before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent-bright));
+      content: "";
+    }
+
+    .winner-rank {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .winner-id {
+      margin-top: 6px;
+      color: var(--primary-dark);
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    html[data-theme="black-gold"] .winner-id,
+    html[data-theme="black-gold"] a { color: var(--accent); }
+
+    .formula {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--formula-bg);
+      color: var(--formula-text);
+      font-family: Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+
+    .mono { font-family: Menlo, Monaco, Consolas, monospace; }
+    .txid { word-break: break-all; }
+
+    .table-wrap {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface-raised);
+    }
+
+    .table { margin-bottom: 0; color: var(--text); background: var(--surface-raised); }
+    .table > thead > tr > th { border-bottom: 1px solid var(--line); background: var(--table-head); color: var(--table-head-text); }
+    .table > tbody > tr > td {
+      color: var(--text);
+      border-top-color: var(--line);
+      background-color: var(--surface-raised);
+    }
+    .table-striped > tbody > tr:nth-child(odd) > td,
+    .table-striped > tbody > tr:nth-child(odd) > th { background-color: var(--surface); }
+    .table > tbody > tr.warning > td,
+    .table > tbody > tr.warning > th { color: var(--text); background-color: var(--warning-bg); }
+    .table-hover > tbody > tr:hover > td,
+    .table-hover > tbody > tr:hover > th { color: var(--text); background-color: var(--primary-soft); }
+    .label-warning { color: #2a1a00; background-color: var(--accent); }
+
+    .alert { border-radius: 16px; border: 0; }
+    .loading-box { text-align: center; padding: 26px 0; color: var(--muted); }
+    .loading-box .fa { color: var(--primary); }
+
+    .footer-note {
+      margin-top: 18px;
+      color: rgba(255,255,255,0.64);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 767px) {
+      .hero { padding-top: 10px; }
+      .hero-topline { display: block; }
+      .brand h1 { font-size: 30px; }
+      .theme-picker { display: inline-block; margin-top: 18px; }
+      .panel-modern .panel-heading, .panel-modern .panel-body { padding-left: 16px; padding-right: 16px; }
+      .form-actions .btn { display: block; width: 100%; margin-bottom: 10px; }
+      .table-wrap { overflow-x: auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; }
     }
   </style>
 
   <script src="jquery-1.11.0.min.js"></script>
-
-  <script src="jquery.qrcode.min.js"></script>
-
   <script src="bootstrap.min.js"></script>
-
   <script src="sjcl.js"></script>
-
   <script src="bitloot.js"></script>
 
   <script>
-    var TICKET_LENGTH = 16;
-    var MAX_WINNERS = 3;
     $(document).ready(function(){
-      // When form submitted, encode data and redirect
-      $("#create-raffle").submit(function( event ) {
-        event.preventDefault();
-
-        var data = encodeData($("#block").val(), $("#level").val(), $("#winners").val(), $("#mantotal").val());
-        // handleData(data);
-        window.location.href = "?data=" + data;
-      });
-     // console.log(getUrlParams());
-
       var urlParams = getUrlParams();
+      initializeTheme(urlParams.theme);
+      refreshLatestHeight(false);
 
-      if (urlParams.simple) {
-        alert("simple");
-        $("#tickets-bought").addClass("simplified");
-      }
+      $("#create-raffle").submit(function(event) {
+        event.preventDefault();
+        var params = readFormParams();
+        if (!params) { return; }
+        var data = encodeData(params.block, params.level, params.winners, params.mantotal);
+        window.location.href = "?data=" + encodeURIComponent(data) + "&theme=" + encodeURIComponent(getCurrentTheme());
+      });
+
+      $("#use-next-block").click(function () {
+        refreshLatestHeight(true);
+      });
+
+      $("#copy-link").click(function () {
+        copyCurrentLink();
+      });
+
+      $(".theme-option").click(function () {
+        applyTheme($(this).attr("data-theme"), true);
+      });
 
       var data = decodeData(urlParams);
-
       var block = Number(data.block);
       var level = Number(data.level);
       var maxWinners = Number(data.winners);
-      maxWinners = isNaN(maxWinners) ? 1 : maxWinners;
       var mantotal = Number(data.mantotal);
 
-      if (block !== undefined && !isNaN(block) && block >= 0 &&
-          level !== undefined && !isNaN(level) && level >= 0) {
-
-        $("#raffle").removeClass("hidden");
-        $(".target-block").text(block);
-          $("#block").val(block);
-          $("#level").val(level);
-          $("#winners").val(maxWinners);
-          $("#mantotal").val(mantotal);
-
+      if (isValidPositiveOrZero(block) && isValidPositive(level) && isValidPositive(maxWinners) && isValidPositive(mantotal)) {
+        setFormValues(block, level, maxWinners, mantotal);
         runLoot(block, level, maxWinners, mantotal);
       }
     });
+
+
+    function initializeTheme(urlTheme) {
+      var theme = isAllowedTheme(urlTheme) ? urlTheme : getCurrentTheme();
+      applyTheme(theme, false);
+    }
+
+    function isAllowedTheme(theme) {
+      return theme === "red-gold" || theme === "black-gold" || theme === "blue-gold";
+    }
+
+    function getCurrentTheme() {
+      var theme = document.documentElement.getAttribute("data-theme");
+      return isAllowedTheme(theme) ? theme : "red-gold";
+    }
+
+    function applyTheme(theme, updateUrl) {
+      if (!isAllowedTheme(theme)) { theme = "red-gold"; }
+      document.documentElement.setAttribute("data-theme", theme);
+      $(".theme-option").attr("aria-pressed", "false");
+      $(".theme-option[data-theme='" + theme + "']").attr("aria-pressed", "true");
+      $(".reset-link").attr("href", "?theme=" + encodeURIComponent(theme));
+
+      try { window.localStorage.setItem("bitloot-theme", theme); } catch (e) {}
+
+      if (updateUrl && window.history && window.history.replaceState) {
+        var parts = window.location.search.substring(1).split("&");
+        var nextParts = [];
+        for (var i = 0; i < parts.length; i++) {
+          if (parts[i] && parts[i].split("=")[0] !== "theme") { nextParts.push(parts[i]); }
+        }
+        nextParts.push("theme=" + encodeURIComponent(theme));
+        window.history.replaceState(null, document.title, window.location.pathname + "?" + nextParts.join("&") + window.location.hash);
+        if ($("#share-url").length) { $("#share-url").val(window.location.href); }
+      }
+    }
+
+    function readFormParams() {
+      var block = Number($("#block").val());
+      var level = Number($("#level").val());
+      var winners = Number($("#winners").val());
+      var mantotal = Number($("#mantotal").val());
+
+      try {
+        bitloot.validateOptions({
+          targetBlockHeight: block,
+          prizeLevel: level,
+          maxWinners: winners,
+          manTotal: mantotal
+        });
+      } catch (err) {
+        showInlineError(err.message);
+        return undefined;
+      }
+
+      return { block: block, level: level, winners: winners, mantotal: mantotal };
+    }
+
+    function setFormValues(block, level, winners, mantotal) {
+      $("#block").val(block);
+      $("#level").val(level);
+      $("#winners").val(winners);
+      $("#mantotal").val(mantotal);
+    }
 
     function decodeData(urlParams) {
       var utf8String = sjcl.codec.utf8String;
       var base64 = sjcl.codec.base64;
 
       try{
-        return JSON.parse(utf8String.fromBits(base64.toBits(urlParams.data)))
-      }catch(e){
-        // Don't care for error
+        if (!urlParams.data) { return urlParams; }
+        return JSON.parse(utf8String.fromBits(base64.toBits(urlParams.data)));
+      } catch(e){
         return urlParams;
       }
     }
@@ -183,109 +680,159 @@
     function encodeData(block, level, winners, mantotal) {
       var utf8String = sjcl.codec.utf8String;
       var base64 = sjcl.codec.base64;
-
       var data = {block: block, level: level, winners: winners, mantotal: mantotal};
       return base64.fromBits(utf8String.toBits(JSON.stringify(data)));
     }
 
-    function showWinner(result) {
-      $(".winner-found").removeClass("hidden");
-      $(".calculating-winner").addClass("hidden");
-      $(".winning-tx").text(result);
-      $("#create-raffle").removeClass("hidden");
-    }
-
-
-
-
-    function showError(message) {
-      $("#spinner").addClass("hidden");
-      $("#winner").addClass("hidden");
-      $("#error-box").removeClass("hidden");
-      $("#error-box p").text(message);
-    }
-
-
-
-    function runLoot(block, level, maxWinners, mantotal) {
-      bitloot.run(block, level, maxWinners, mantotal, function(err, result) {
+    function refreshLatestHeight(fillNextBlock) {
+      $("#latest-height").html("<i class='fa fa-spinner fa-spin'></i>");
+      bitloot.getLatestHeight(function (err, height) {
         if (err) {
-          showError(err);
-//          console.error(err);
-          $("#create-raffle").removeClass("hidden");
+          $("#latest-height").text("获取失败");
+          if (fillNextBlock) { showInlineError(err); }
           return;
         }
-        else if (err === "") {
-          showError("An unknown error occurred");
-//          console.error("An unknown error occurred");
-          return;
-        }
-
-
-        if (result !== undefined && result) {
-          // var winner = result.winners[0];
-            result = level + "等奖 " + result;
-            showWinner(result);
-//          console.log("Winner transaction is: " + winner.tx.hash + " with ticket " + winner.ticket);
-          // showFollowups(result.winners);
-        }
-        else {
-//          console.log("Not a winner yet");
-          showWinner("none", "none");
-        }
-      }, function(latestBlock) {
-        if (latestBlock.height < block) {
-          var blocksLeft = block - latestBlock.height;
-          $(".blocks-left").text(blocksLeft);
-        }
-        else {
-          $("#spinner").addClass("hidden");
-          $("#winner").removeClass("hidden");
-          $(".blocks-left").text(0);
-        }
-
-      }, function(newTxs) {
-        var tableRows = [];
-        var totalAmount = Number($(".amount-in-raffle").text());
-        if (isNaN(totalAmount)) { totalAmount = 0; }
-        totalAmount = Math.round(totalAmount * 1e8);
-
-        for (var i = 0; i < newTxs.length; i++) {
-          var tx = newTxs[i];
-          var row =
-              "<tr><td>"+tx.hash+"</td>" +
-                  "<td><i class='fa fa-btc'></i> "+tx.value/1e8+"</td>" +
-                  "<td>"+tx.totalTickets+"</td></tr>";
-          tableRows.push(row);
-          totalAmount += tx.value;
-
-          // Show tickets
-          if (tx.tickets.length > 0) {
-            var rowspan = " rowspan='" + (tx.tickets.length + 1) + "'";
-
-            tableRows.push("<tr><td"+rowspan+">Tickets</td><td"+rowspan+"></td></tr>");
-
-            for (var j = 0; j < tx.tickets.length; j++) {
-              var ticketShort = "<span class='ticket'>" + tx.tickets[j].substr(0, TICKET_LENGTH) + "</span>";
-              var ticketRow = "<tr><td>"+ticketShort+"</td></tr>";
-              tableRows.push(ticketRow);
-            }
-          }
-        }
-        $(".amount-in-raffle").text(totalAmount / 1e8);
-        // Show table if there are transactions
-        if (newTxs.length > 0) {
-          $("#tickets-bought").removeClass("hidden");
-          $("#result-table > tbody:last").append(tableRows.join(""));
+        $("#latest-height").text(height);
+        if (fillNextBlock) {
+          $("#block").val(height + 1);
         }
       });
     }
 
+    function runLoot(block, level, maxWinners, mantotal) {
+      resetResultState();
+      $("#raffle").removeClass("hidden");
+      $("#summary-target").text(block);
+      $("#summary-level").text(level + " 等奖");
+      $("#summary-winners").text(maxWinners);
+      $("#summary-total").text(mantotal);
+      $("#share-url").val(window.location.href);
+
+      bitloot.run(block, level, maxWinners, mantotal, function(err, result) {
+        if (err) {
+          showResultError(err);
+          return;
+        }
+
+        if (result) {
+          showWinner(result);
+        }
+      }, function(latestBlock) {
+        $("#summary-latest").text(latestBlock.height);
+        if (latestBlock.height < block) {
+          var blocksLeft = block - latestBlock.height;
+          $("#status-title").text("等待目标区块产生");
+          $("#status-detail").text("当前最新 Block 是 " + latestBlock.height + "，距离目标还剩 " + blocksLeft + " 个区块。页面会自动轮询。");
+          $("#blocks-left").text(blocksLeft);
+        } else {
+          $("#status-title").text("目标区块已出现");
+          $("#status-detail").text("正在读取区块交易并计算中奖者。");
+          $("#blocks-left").text(0);
+        }
+      });
+    }
+
+    function resetResultState() {
+      $("#inline-error").addClass("hidden").text("");
+      $("#error-box").addClass("hidden");
+      $("#result-box").addClass("hidden");
+      $("#loading-box").removeClass("hidden");
+      $("#winner-grid").empty();
+      $("#draw-detail tbody").empty();
+      $("#block-hash").text("-").attr("href", "#");
+      $("#tx-count").text("-");
+      $("#blocks-left").text("-");
+      $("#summary-latest").text("-");
+    }
+
+    function showInlineError(message) {
+      $("#inline-error").removeClass("hidden").text(message);
+    }
+
+    function showResultError(message) {
+      $("#loading-box").addClass("hidden");
+      $("#result-box").addClass("hidden");
+      $("#error-box").removeClass("hidden");
+      $("#error-message").text(message);
+    }
+
+    function showWinner(result) {
+      $("#loading-box").addClass("hidden");
+      $("#error-box").addClass("hidden");
+      $("#result-box").removeClass("hidden");
+
+      $("#result-title").text(result.prizeLevel + " 等奖中奖名单");
+      $("#result-subtitle").text(result.complete ? "已产生 " + result.winners.length + " 位不重复中奖者。" : "区块交易不足，未能产生全部中奖者。");
+      $("#block-hash").text(result.blockHash).attr("href", "https://blockstream.info/block/" + result.blockHash);
+      $("#tx-count").text(result.txCount);
+      $("#formula").text("winner = (parseInt(txid.slice(-8), 16) % " + result.manTotal + ") + 1");
+
+      var cards = [];
+      for (var i = 0; i < result.winners.length; i++) {
+        cards.push(
+          "<div class='winner-card'>" +
+            "<div class='winner-rank'>第 " + (i + 1) + " 位</div>" +
+            "<div class='winner-id'>" + escapeHtml(result.winners[i].winner) + "</div>" +
+          "</div>"
+        );
+      }
+      $("#winner-grid").html(cards.join(""));
+
+      var rows = [];
+      for (var j = 0; j < result.draws.length; j++) {
+        var draw = result.draws[j];
+        rows.push(
+          "<tr" + (draw.duplicate ? " class='warning'" : "") + ">" +
+            "<td>" + escapeHtml(draw.order) + "</td>" +
+            "<td class='txid mono'><a target='_blank' rel='noopener' href='https://blockstream.info/tx/" + encodeURIComponent(draw.txid) + "'>" + escapeHtml(shortTxid(draw.txid)) + "</a></td>" +
+            "<td class='mono'>" + escapeHtml(draw.last8) + "</td>" +
+            "<td>" + escapeHtml(draw.value) + "</td>" +
+            "<td><strong>" + escapeHtml(draw.winner) + "</strong>" + (draw.duplicate ? " <span class='label label-warning'>重复，跳过</span>" : "") + "</td>" +
+          "</tr>"
+        );
+      }
+      $("#draw-detail tbody").html(rows.join(""));
+    }
+
+    function copyCurrentLink() {
+      var input = document.getElementById("share-url");
+      input.focus();
+      input.select();
+      try {
+        document.execCommand("copy");
+        $("#copy-link").text("已复制");
+        setTimeout(function () { $("#copy-link").text("复制链接"); }, 1400);
+      } catch (err) {
+        showInlineError("复制失败，请手动复制链接。");
+      }
+    }
+
+    function shortTxid(txid) {
+      txid = String(txid);
+      return txid.length > 24 ? txid.slice(0, 12) + "…" + txid.slice(-12) : txid;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function isValidPositive(value) {
+      return value !== undefined && !isNaN(value) && isFinite(value) && value >= 1;
+    }
+
+    function isValidPositiveOrZero(value) {
+      return value !== undefined && !isNaN(value) && isFinite(value) && value >= 0;
+    }
 
     function getUrlParams() {
       "use strict";
       var match,
-          pl     = /\+/g,  // Regex for replacing addition symbol with a space
+          pl     = /\+/g,
           search = /([^&=]+)=?([^&]*)/g,
           decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
           query  = window.location.search.substring(1);
@@ -308,152 +855,161 @@
       }
       return urlParams;
     }
-
-
-
-
   </script>
-
 </head>
 <body>
-<div class="container">
-
-  <div class="page-header">
-    <a href=".">
-      <h1><i class="fa fa-ticket "></i> BitLoot</h1>
-    </a>
-  </div>
-
-  <p class="lead">基于 Bitcoin Blockchain 的年会抽奖游戏。</p>
-
-
-  <div id="raffle" class="hidden">
-    <div class="header">
-
-      <h3>
-        <span class="title"></span>
-        <small>目标block：<span class="target-block"></span>
-          (还剩<span class="blocks-left"><i class="fa fa-spinner fa-spin"></i></span>)</small>
-      </h3>
-    </div>
-
-    <div id="spinner" class="text-center">
-      <h1><i class="fa fa-spinner fa-spin"></i></h1>
-    </div>
-
-    <div id="error-box" class="alert alert-danger hidden">
-      <h5>Error</h5>
-      <p></p>
-    </div>
-
-    <div id="winner" class="alert alert-success hidden">
-      <p class="calculating-winner">计算中奖者... <i class="fa fa-spinner fa-spin"></i></p>
-      <div class="winner-found hidden">
-        <h2>抽奖结果: <span class="winning-tx"></span> !</h2>
-
+  <div class="app-shell">
+    <div class="hero">
+      <div class="hero-topline">
+        <a class="brand" href=".">
+          <span class="brand-icon"><i class="fa fa-ticket fa-2x"></i></span>
+          <h1>BitLoot</h1>
+        </a>
+        <div class="theme-picker" aria-label="配色主题">
+          <span class="theme-picker-label">配色主题</span>
+          <div class="theme-options" role="group" aria-label="选择配色主题">
+            <button class="theme-option" type="button" data-theme="red-gold" aria-pressed="true" title="红金主题">
+              <span class="theme-swatch theme-swatch-red"></span><span>红金</span>
+            </button>
+            <button class="theme-option" type="button" data-theme="black-gold" aria-pressed="false" title="黑金主题">
+              <span class="theme-swatch theme-swatch-black"></span><span>黑金</span>
+            </button>
+            <button class="theme-option" type="button" data-theme="blue-gold" aria-pressed="false" title="蓝金主题">
+              <span class="theme-swatch theme-swatch-blue"></span><span>蓝金</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="lead">基于 Bitcoin 区块交易 Hash 的公开、可复现抽奖工具。选择一个未来或历史区块，区块出现后用交易哈希末 8 位计算中奖编号。</p>
+      <div class="badge-line">
+        <span class="soft-badge"><i class="fa fa-lock"></i> 无后端静态页面</span>
+        <span class="soft-badge"><i class="fa fa-repeat"></i> 结果可复算</span>
+        <span class="soft-badge"><i class="fa fa-link"></i> 可分享验证链接</span>
       </div>
     </div>
 
+    <div class="row">
+      <div class="col-md-5">
+        <div class="panel panel-modern">
+          <div class="panel-heading">
+            <h3 class="section-title">抽奖设置</h3>
+            <p class="section-subtitle">建议在活动现场选择“下一个新区块”，等待链上区块产生后自动开奖。</p>
+          </div>
+          <div class="panel-body">
+            <div id="inline-error" class="alert alert-danger hidden"></div>
+            <form id="create-raffle" role="form">
+              <div class="form-group">
+                <label for="block" class="control-label">目标 Block</label>
+                <div class="input-group">
+                  <input required type="number" min="0" step="1" class="form-control" id="block" name="block" placeholder="例如 957861">
+                  <span class="input-group-btn">
+                    <button id="use-next-block" type="button" class="btn btn-ghost">使用下一新区块</button>
+                  </span>
+                </div>
+                <span class="help-block">当前最新 Block：<strong id="latest-height"><i class="fa fa-spinner fa-spin"></i></strong></span>
+              </div>
 
-  </div>
+              <div class="form-group">
+                <label for="level" class="control-label">奖品等级</label>
+                <input required type="number" min="1" max="99" step="1" class="form-control" id="level" name="level" placeholder="3" value="3">
+              </div>
 
+              <div class="form-group">
+                <label for="winners" class="control-label">中奖人数</label>
+                <input required type="number" min="1" step="1" class="form-control" id="winners" name="winners" placeholder="1" value="1">
+              </div>
 
-  <div id="fill-parameters" class="row">
+              <div class="form-group">
+                <label for="mantotal" class="control-label">参与总人数</label>
+                <input required type="number" min="1" step="1" class="form-control" id="mantotal" name="mantotal" placeholder="100" value="100">
+                <span class="help-block">参与者编号应为 1 到总人数，例如 1-100。</span>
+              </div>
 
-    <div class="col-md-6">
-      <form id="create-raffle" class="form-horizontal" role="form">
+              <div class="form-actions">
+                <button type="submit" class="btn btn-create"><i class="fa fa-play"></i> 开始抽奖</button>
+                <a class="btn btn-ghost reset-link" href="?theme=red-gold"><i class="fa fa-refresh"></i> 重置</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
-        <div class="form-group">
-          <label for="block" class="col-sm-3 control-label">Target block</label>
-          <div class="col-sm-9">
-            <input required="required" type="number" min="0" class="form-control" id="block" name="block" placeholder=" 449388">
-            <span class="help-block">当出现该Block后计算中奖者</span>
+      <div class="col-md-7">
+        <div id="raffle" class="panel panel-modern hidden">
+          <div class="panel-heading">
+            <h3 class="section-title" id="status-title">准备开奖</h3>
+            <p class="section-subtitle" id="status-detail">正在连接区块链 API。</p>
+            <div class="status-strip">
+              <div class="stat"><div class="stat-label">目标</div><div class="stat-value" id="summary-target">-</div></div>
+              <div class="stat"><div class="stat-label">最新</div><div class="stat-value" id="summary-latest">-</div></div>
+              <div class="stat"><div class="stat-label">剩余区块</div><div class="stat-value" id="blocks-left">-</div></div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="loading-box" class="loading-box">
+              <h1><i class="fa fa-spinner fa-spin"></i></h1>
+              <p>等待区块确认或读取交易中...</p>
+            </div>
+
+            <div id="error-box" class="alert alert-danger hidden">
+              <h4><i class="fa fa-exclamation-triangle"></i> 无法完成抽奖</h4>
+              <p id="error-message"></p>
+            </div>
+
+            <div id="result-box" class="hidden">
+              <div class="result-hero">
+                <h2 id="result-title">抽奖结果</h2>
+                <p id="result-subtitle"></p>
+                <div id="winner-grid" class="winner-grid"></div>
+                <div class="formula" id="formula"></div>
+              </div>
+
+              <div class="status-strip">
+                <div class="stat"><div class="stat-label">奖项</div><div class="stat-value" id="summary-level">-</div></div>
+                <div class="stat"><div class="stat-label">中奖人数</div><div class="stat-value" id="summary-winners">-</div></div>
+                <div class="stat"><div class="stat-label">参与总数</div><div class="stat-value" id="summary-total">-</div></div>
+                <div class="stat"><div class="stat-label">交易数量</div><div class="stat-value" id="tx-count">-</div></div>
+              </div>
+
+              <h4 style="margin-top: 22px; font-weight: 800;">验证信息</h4>
+              <p class="section-subtitle">任何人都可以打开同一个链接，或到区块浏览器查看区块交易 Hash，并按公式复算。</p>
+              <p><strong>Block Hash：</strong><a id="block-hash" class="mono txid" target="_blank" rel="noopener" href="#">-</a></p>
+              <div class="input-group">
+                <input id="share-url" class="form-control mono" readonly>
+                <span class="input-group-btn"><button id="copy-link" class="btn btn-ghost" type="button">复制链接</button></span>
+              </div>
+
+              <h4 style="margin-top: 22px; font-weight: 800;">计算明细</h4>
+              <div class="table-wrap">
+                <table id="draw-detail" class="table table-striped table-hover">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>交易 Hash</th>
+                      <th>末 8 位</th>
+                      <th>十进制</th>
+                      <th>中奖编号</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="level" class="col-sm-3 control-label">Prize level</label>
-          <div class="col-sm-9">
-            <input required="required" type="number" min="1" max="5" class="form-control unfocus" id="level" name="level"  placeholder="3" value="3">
-            <span class="help-block">奖品等级</span>
+        <div class="panel panel-modern">
+          <div class="panel-heading">
+            <h3 class="section-title">规则说明</h3>
+            <p class="section-subtitle">每笔交易 Hash 都是公开数据。程序从目标区块的交易列表开始顺序取值，遇到重复中奖编号会跳过并继续取下一笔交易，直到凑齐中奖人数。</p>
           </div>
         </div>
-
-        <div class="form-group">
-          <label for="winners" class="col-sm-3 control-label">Winners</label>
-          <div class="col-sm-9">
-            <input required="required" type="number" min="1" class="form-control unfocus" id="winners" name="winners"  placeholder="1" value="1">
-            <span class="help-block">中奖人数</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="mantotal" class="col-sm-3 control-label">Total</label>
-          <div class="col-sm-9">
-            <input required="required" type="number" min="1" class="form-control unfocus" id="mantotal" name="mantotal" placeholder="100" value="100">
-            <span class="help-block">总人数</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <div class="col-sm-offset-3 col-sm-9">
-            <button type="submit" class="btn btn-create">开始抽奖</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-</div>
-
-<div id="footer">
-
-  <div class="modal fade" id="license" tabindex="-1" role="dialog" aria-labelledby="licenseLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h4 class="modal-title" id="myModalLabel">The MIT License (MIT)</h4>
-        </div>
-        <div class="modal-body">
-          <p>Copyright (c) 2014 Giannis Dzegoutanis</p>
-
-          <p>
-            Permission is hereby granted, free of charge, to any person obtaining a copy
-            of this software and associated documentation files (the "Software"), to deal
-            in the Software without restriction, including without limitation the rights
-            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-            copies of the Software, and to permit persons to whom the Software is
-            furnished to do so, subject to the following conditions:
-          </p>
-
-          <p>
-            The above copyright notice and this permission notice shall be included in all
-            copies or substantial portions of the Software.
-          </p>
-
-          <p>
-            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-            SOFTWARE.
-          </p>
-        </div>
-
       </div>
     </div>
-  </div>
 
-  <div class="container">
-    <p class="text-muted">
-      &copy; 2014 <a href="https://github.com/supermilkycow">Super Cow</a>.
-      Uses APIs from <a href="http://blockr.io/" target="_blank">blockr.io</a>.
-      Read the terms of use <a href="" data-toggle="modal" data-target="#license">here</a>.
+    <p class="footer-note">
+      &copy; 2014 Super Cow. 当前版本使用 Blockstream Esplora API。源码和结果均可本地复验。
     </p>
   </div>
-</div>
-
-
 </body>
 </html>

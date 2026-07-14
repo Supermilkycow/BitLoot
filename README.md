@@ -38,3 +38,36 @@
 
 [1]:	https://www.zhihu.com/question/20941124 "比特币是怎样运行的"
 [2]:	http://en.wikipedia.org/wiki/SHA-2 "SHA-256-wiki"
+
+## 0x04 当前版本使用说明
+
+本仓库现在仍然是纯静态网页，不需要后端服务。直接用浏览器打开 `index.html`，或在仓库目录运行：
+
+```bash
+python3 -m http.server 8088
+```
+
+然后访问 `http://127.0.0.1:8088/`。
+
+### 抽奖步骤
+
+1. 输入目标 Bitcoin Block。建议点击“使用下一新区块”，这样活动开始后等待未来区块产生，随机性更容易被现场参与者接受。
+2. 输入奖品等级、中奖人数、参与总人数。参与者编号应为 `1..总人数`。
+3. 点击“开始抽奖”。页面会把参数编码到 URL，方便分享和复验。
+4. 目标区块出现后，程序读取该区块交易 Hash 列表，并按以下公式顺序计算：
+
+```text
+winner = (parseInt(txid.slice(-8), 16) % 总人数) + 1
+```
+
+如果出现重复中奖编号，会跳过该交易并继续取下一笔交易，直到凑齐中奖人数或交易用尽。
+
+### API
+
+当前版本使用 Blockstream Esplora HTTPS API：
+
+- `GET https://blockstream.info/api/blocks/tip/height` 获取最新区块高度。
+- `GET https://blockstream.info/api/block-height/:height` 获取区块 Hash。
+- `GET https://blockstream.info/api/block/:hash/txids` 获取目标区块交易 Hash 列表。
+
+旧版 `blockr.io` API 已不可用，因此已移除。

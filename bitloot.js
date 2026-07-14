@@ -1,156 +1,296 @@
-
 (function (global) {
   "use strict";
-  var sjcl = global.sjcl;
+
   var bitloot = {};
+  var API_BASE = "https://blockstream.info/api";
+  var DEFAULT_POLL_INTERVAL = 30000;
+
   global.bitloot = bitloot;
 
-  // bitloot.run = function(targetBlockHeight, address, ticketPrice, giftEvery, maxWinners, callback, updateBlock, updateTxs) {
-  bitloot.run = function(targetBlockHeight, prizeLevel, maxWinners, manTotal, callback, updateBlock, updateTxs) {
+  bitloot.API_BASE = API_BASE;
+  bitloot.getLatestHeight = getLatestHeight;
+  bitloot.getBlockHash = getBlockHash;
+  bitloot.getBlockTxids = getBlockTxids;
 
-    var error = function(message) {
-      setTimeout(function () { callback(message); }, 0);
-    };
+  bitloot.validateOptions = function (options) {
+    var targetBlockHeight = toInteger(options.targetBlockHeight, "目标 Block");
+    var prizeLevel = toInteger(options.prizeLevel, "奖品等级");
+    var maxWinners = toInteger(options.maxWinners, "中奖人数");
+    var manTotal = toInteger(options.manTotal, "总人数");
 
-    var callbackFinalize = function(result) {
-      setTimeout(function () { callback(undefined, result); }, 0);
-    };
-
-    // var TX_PROCESS_BATCH = 20;
-    // var ticketsList = [];
-    // var ticketsIndex = {};
-
-
-      var getTxs = function(targetBlockHeight, calcCallback ) {
-          var result = new Array();
-          var apiUrl = "http://btc.blockr.io/api/v1/block/txs/" + targetBlockHeight;
-          get(apiUrl, function(err, response) {
-                  if (err) {
-                      error(err);
-                      return;
-                  }
-                  var apiResult = JSON.parse(response);
-                  if (apiResult.data === undefined || apiResult.data.txs === undefined) {
-                      error("Server returned incorrect data. Request URL: " + apiUrl);
-                      return;
-                  }
-
-                  var txs = apiResult.data.txs;
-                  var data = apiResult.data;
-                  var isFinalPage = true;
-
-                  for (var i=0;i<maxWinners && i<txs.length ;i++)
-                  {
-                      var winner_id ;
-                      var last8digit =   txs[i].tx;
-                      last8digit = last8digit.substr(-8, last8digit.length);
-
-                      winner_id= parseInt(last8digit.toString(),16);
-
-                      winner_id = winner_id % manTotal;
-
-                      result.push(winner_id + 1);
-                  }
-
-                  callbackFinalize(result);
-              }
-          );
-
-      };
-
-
-
-
-      var calWinner = function(txs) {
-        alert("targetBlockHeight="+targetBlockHeight+"&prizeLevel="+prizeLevel+"&maxWinners="+maxWinners+"&manTotal="+manTotal);
-        var result = new Array("110");
-        callbackFinalize(result);
+    if (targetBlockHeight < 0) {
+      throw new Error("目标 Block 不能小于 0。");
+    }
+    if (prizeLevel < 1) {
+      throw new Error("奖品等级必须大于等于 1。");
+    }
+    if (maxWinners < 1) {
+      throw new Error("中奖人数必须大于等于 1。");
+    }
+    if (manTotal < 1) {
+      throw new Error("总人数必须大于等于 1。");
+    }
+    if (maxWinners > manTotal) {
+      throw new Error("中奖人数不能大于总人数，否则无法产生不重复中奖名单。");
     }
 
-    var blocksCallback = function(err, blocks) {
-      if (err) {
-        error(err);
-        return;
-      }
-
-      setTimeout(function () { updateBlock({height: blocks[0].nb}); }, 0);
-      console.log("last:"+targetBlockHeight+"!="+"block="+blocks[0].nb);
-      if (blocks[0].nb === targetBlockHeight) {
-       //   alert("中奖者诞生!");
-          setTimeout(function () { getTxs(targetBlockHeight); }, 0);
-      }
-      else if(blocks[0].nb < targetBlockHeight){
-          setTimeout(function () { getBlocks("last,"+targetBlockHeight, blocksCallback); }, 1500);
-      }
-      else {
-         alert("若不是验证历史抽奖，请重新选择 Block! 最新网络上的Block为： "+blocks[0].nb+", 请至少输入一个比这个大的数值.");
-         setTimeout(function () { getTxs(targetBlockHeight); }, 0);
-      }
+    return {
+      targetBlockHeight: targetBlockHeight,
+      prizeLevel: prizeLevel,
+      maxWinners: maxWinners,
+      manTotal: manTotal
     };
-
-    // Get latest block,
-    getBlocks("last,"+targetBlockHeight, blocksCallback);
   };
 
-  function getBlocks(heightQuery, callback) {
-    var error = function(message) {
-      setTimeout(function () { callback(message); }, 0);
+  bitloot.calculateWinners = function (txids, maxWinners, manTotal) {
+    if (!Array.isArray(txids) || txids.length === 0) {
+      throw new Error("目标区块没有可用于抽奖的交易哈希。");
+    }
+
+    maxWinners = toInteger(maxWinners, "中奖人数");
+    manTotal = toInteger(manTotal, "总人数");
+
+    var winners = [];
+    var seen = {};
+    var draws = [];
+    var duplicates = [];
+
+    for (var i = 0; i < txids.length && winners.length < maxWinners; i++) {
+      var txid = String(txids[i]);
+      var last8 = txid.slice(-8);
+      var rawValue = parseInt(last8, 16);
+
+      if (!isFinite(rawValue) || isNaN(rawValue)) {
+        continue;
+      }
+
+      var winnerId = (rawValue % manTotal) + 1;
+      var draw = {
+        order: i + 1,
+        txid: txid,
+        last8: last8,
+        value: rawValue,
+        winner: winnerId,
+        duplicate: Boolean(seen[winnerId])
+      };
+
+      draws.push(draw);
+
+      if (draw.duplicate) {
+        duplicates.push(draw);
+        continue;
+      }
+
+      seen[winnerId] = true;
+      winners.push(draw);
+    }
+
+    return {
+      winners: winners,
+      draws: draws,
+      duplicates: duplicates,
+      txCount: txids.length,
+      complete: winners.length === maxWinners
     };
+  };
 
-    var requestUrl = "http://btc.blockr.io/api/v1/block/info/" + heightQuery;
-    // var requestUrl = "http://btc.blockr.io/api/v1/block/info/last";
-    console.log(requestUrl);
+  bitloot.run = function (targetBlockHeight, prizeLevel, maxWinners, manTotal, callback, updateBlock, updateTxs) {
+    var options;
+    try {
+      options = bitloot.validateOptions({
+        targetBlockHeight: targetBlockHeight,
+        prizeLevel: prizeLevel,
+        maxWinners: maxWinners,
+        manTotal: manTotal
+      });
+    } catch (err) {
+      return defer(function () { callback(err.message); });
+    }
 
-    get(requestUrl, function(err, response) {
+    var finished = false;
+    var pollInterval = DEFAULT_POLL_INTERVAL;
+
+    function fail(message) {
+      if (finished) { return; }
+      finished = true;
+      defer(function () { callback(message); });
+    }
+
+    function done(result) {
+      if (finished) { return; }
+      finished = true;
+      defer(function () { callback(undefined, result); });
+    }
+
+    function emitBlock(latestHeight, status) {
+      if (typeof updateBlock === "function") {
+        defer(function () {
+          updateBlock({
+            height: latestHeight,
+            target: options.targetBlockHeight,
+            status: status
+          });
+        });
+      }
+    }
+
+    function waitForBlock() {
+      getLatestHeight(function (err, latestHeight) {
+        if (err) {
+          fail(err);
+          return;
+        }
+
+        emitBlock(latestHeight, latestHeight >= options.targetBlockHeight ? "ready" : "waiting");
+
+        if (latestHeight >= options.targetBlockHeight) {
+          loadTargetBlock();
+        } else {
+          defer(function () { waitForBlock(); }, pollInterval);
+        }
+      });
+    }
+
+    function loadTargetBlock() {
+      getBlockHash(options.targetBlockHeight, function (err, blockHash) {
+        if (err) {
+          fail(err);
+          return;
+        }
+
+        getBlockTxids(blockHash, function (txErr, txids) {
+          if (txErr) {
+            fail(txErr);
+            return;
+          }
+
+          var calculation;
+          try {
+            calculation = bitloot.calculateWinners(txids, options.maxWinners, options.manTotal);
+          } catch (calcErr) {
+            fail(calcErr.message);
+            return;
+          }
+
+          calculation.blockHeight = options.targetBlockHeight;
+          calculation.blockHash = blockHash;
+          calculation.prizeLevel = options.prizeLevel;
+          calculation.maxWinners = options.maxWinners;
+          calculation.manTotal = options.manTotal;
+          calculation.apiBase = API_BASE;
+
+          if (typeof updateTxs === "function") {
+            defer(function () { updateTxs(calculation); });
+          }
+
+          done(calculation);
+        });
+      });
+    }
+
+    waitForBlock();
+  };
+
+  function getLatestHeight(callback) {
+    getText(API_BASE + "/blocks/tip/height", function (err, responseText) {
       if (err) {
-        error(err);
+        callback(err);
         return;
       }
 
-      var apiResult = JSON.parse(response);
-      if (apiResult.data === undefined) {
-        error("Server returned incorrect data. Request URL: " + requestUrl);
-        return;
-      }
-      else if (apiResult.data.length === 0) {
-        error("Block " + heightQuery + " was not not found. Request URL: " + requestUrl);
+      var height = Number(String(responseText).trim());
+      if (!isFinite(height) || isNaN(height)) {
+        callback("区块链 API 返回了无效的最新高度。");
         return;
       }
 
-      var blocks;
-      if (apiResult.data instanceof Array) {
-        blocks = apiResult.data;
-      } else {
-        blocks = [apiResult.data];
-      }
-      setTimeout(function () { callback(undefined, blocks); }, 0);
-
+      callback(undefined, height);
     });
   }
 
+  function getBlockHash(height, callback) {
+    getText(API_BASE + "/block-height/" + encodeURIComponent(height), function (err, responseText) {
+      if (err) {
+        callback(err);
+        return;
+      }
 
-  function get(url, callback) {
-    var error = function(message) {
-      setTimeout(function () { callback(message); }, 0);
-    };
+      var hash = String(responseText).trim();
+      if (!/^[0-9a-f]{64}$/i.test(hash)) {
+        callback("区块链 API 返回了无效的区块 Hash。");
+        return;
+      }
 
+      callback(undefined, hash);
+    });
+  }
+
+  function getBlockTxids(blockHash, callback) {
+    getJson(API_BASE + "/block/" + encodeURIComponent(blockHash) + "/txids", function (err, txids) {
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      if (!Array.isArray(txids)) {
+        callback("区块链 API 返回了无效的交易列表。");
+        return;
+      }
+
+      callback(undefined, txids);
+    });
+  }
+
+  function getJson(url, callback) {
+    getText(url, function (err, responseText) {
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      try {
+        callback(undefined, JSON.parse(responseText));
+      } catch (parseErr) {
+        callback("无法解析区块链 API 响应：" + parseErr.message);
+      }
+    });
+  }
+
+  function getText(url, callback) {
     var request = new XMLHttpRequest();
 
-    request.open('GET', url, true);
+    request.open("GET", url, true);
+    request.timeout = 20000;
 
-    request.onload = function() {
-      if (request.status >= 200 && request.status < 400){
-        setTimeout(function () { callback(undefined, request.responseText); }, 0);
+    request.onload = function () {
+      if (request.status >= 200 && request.status < 400) {
+        callback(undefined, request.responseText);
       } else {
-        error(request.statusText === "" ? "Could not get "+ url : request.statusText);
+        callback("请求区块链 API 失败（HTTP " + request.status + "）：" + url);
       }
     };
 
-    request.onerror = function() {
-      error(request.statusText === "" ? "Could not get "+ url : request.statusText);
+    request.onerror = function () {
+      callback("无法连接区块链 API：" + url);
+    };
+
+    request.ontimeout = function () {
+      callback("请求区块链 API 超时：" + url);
     };
 
     request.send();
+  }
+
+  function toInteger(value, label) {
+    var number = Number(value);
+    if (!isFinite(number) || isNaN(number) || Math.floor(number) !== number) {
+      throw new Error(label + "必须是整数。");
+    }
+    return number;
+  }
+
+  function defer(fn, delay) {
+    setTimeout(fn, delay || 0);
   }
 
 })(this);
